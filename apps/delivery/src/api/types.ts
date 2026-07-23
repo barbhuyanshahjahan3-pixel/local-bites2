@@ -19,6 +19,7 @@ export interface AssignedOrder {
   deliveryLng?: number;
   status: string;
   deliveryPartner: string | null;
+  restaurant?: { name: string; address: string; lat?: number; lng?: number };
 }
 
 export interface HistoryOrder {

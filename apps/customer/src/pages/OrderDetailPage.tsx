@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useCustomerSocket } from '../hooks/useCustomerSocket';
 import { Screen } from '../navigation';
+import OrderTrackingMap from '../components/OrderTrackingMap';
 
 interface StatusEvent {
   status: string;
@@ -24,8 +25,13 @@ interface OrderFull {
   paymentStatus: string;
   status: string;
   statusHistory: StatusEvent[];
-  restaurant: { _id: string; name: string };
+  restaurant: { _id: string; name: string; lat?: number; lng?: number };
+  deliveryLat?: number;
+  deliveryLng?: number;
+  deliveryPartner?: { name: string; currentLat?: number; currentLng?: number; vehicleType?: string } | null;
 }
+
+const TRACKABLE_STATUSES = ['delivery_accepted', 'picked_up', 'on_the_way'];
 
 const CANCELLABLE_STATUSES = ['placed', 'restaurant_accepted'];
 
@@ -50,17 +56,28 @@ export default function OrderDetailPage({ orderId }: { orderId: string; onNaviga
   const [reviewSent, setReviewSent] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [partnerPos, setPartnerPos] = useState<{ lat: number; lng: number } | null>(null);
 
   const load = () =>
-    api.get<{ order: OrderFull }>(`/api/customer/orders/mine/${orderId}`).then((r) => setOrder(r.order));
+    api.get<{ order: OrderFull }>(`/api/customer/orders/mine/${orderId}`).then((r) => {
+      setOrder(r.order);
+      if (r.order.deliveryPartner?.currentLat && r.order.deliveryPartner?.currentLng) {
+        setPartnerPos({ lat: r.order.deliveryPartner.currentLat, lng: r.order.deliveryPartner.currentLng });
+      }
+    });
 
   useEffect(() => {
     load();
   }, [orderId]);
 
-  useCustomerSocket((payload) => {
-    if (payload.orderId === orderId) load();
-  });
+  useCustomerSocket(
+    (payload) => {
+      if (payload.orderId === orderId) load();
+    },
+    (payload) => {
+      if (payload.orderId === orderId) setPartnerPos({ lat: payload.lat, lng: payload.lng });
+    }
+  );
 
   const submitReview = async () => {
     if (!order) return;
@@ -99,6 +116,25 @@ export default function OrderDetailPage({ orderId }: { orderId: string; onNaviga
         <h1 className="text-xl font-semibold text-white">{order.orderNumber}</h1>
         <p className="text-sm text-slate-400">{order.restaurant?.name}</p>
       </div>
+
+      {TRACKABLE_STATUSES.includes(order.status) && (order.restaurant?.lat || order.deliveryLat) && (
+        <div className="space-y-1">
+          <OrderTrackingMap
+            restaurant={
+              order.restaurant?.lat && order.restaurant?.lng
+                ? { lat: order.restaurant.lat, lng: order.restaurant.lng }
+                : null
+            }
+            drop={order.deliveryLat && order.deliveryLng ? { lat: order.deliveryLat, lng: order.deliveryLng } : null}
+            partner={partnerPos}
+          />
+          {!partnerPos && (
+            <p className="text-xs text-slate-500">
+              Waiting for your delivery partner's live location…
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="card space-y-2">
         {order.statusHistory.map((ev, i) => (

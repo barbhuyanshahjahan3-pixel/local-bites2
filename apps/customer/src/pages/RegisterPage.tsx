@@ -25,7 +25,8 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4">
-        <div>
+        <div className="flex flex-col items-center text-center">
+          <img src="/logo.png" alt="Local Bites" className="w-16 h-16 rounded-2xl mb-3" />
           <h1 className="text-2xl font-semibold text-white">Local Bites</h1>
           <p className="text-sm text-slate-400">Food from your favorite local spots.</p>
         </div>

@@ -1,12 +1,30 @@
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import DashboardPage from './pages/DashboardPage';
+import RestaurantSplash from './components/RestaurantSplash';
 
 export default function App() {
   const { token, mustChangePassword } = useAuth();
+  const [splashDone, setSplashDone] = useState(false);
 
-  if (!token) return <LoginPage />;
-  if (mustChangePassword) return <ChangePasswordPage />;
-  return <DashboardPage />;
+  const content = !token ? <LoginPage /> : mustChangePassword ? <ChangePasswordPage /> : <DashboardPage />;
+
+  return (
+    <>
+      {!splashDone && <RestaurantSplash onDone={() => setSplashDone(true)} />}
+      {splashDone && (
+        <motion.div
+          initial={{ y: 24, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+        >
+          {content}
+        </motion.div>
+      )}
+    </>
+  );
 }
+

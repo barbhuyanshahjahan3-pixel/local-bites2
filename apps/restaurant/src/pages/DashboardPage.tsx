@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import OrdersTab from './tabs/OrdersTab';
 import MenuTab from './tabs/MenuTab';
@@ -20,9 +21,12 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-slate-800 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-white">Local Bites — Restaurant</h1>
-          {profile && <p className="text-xs text-slate-500">{profile.name}</p>}
+        <div className="flex items-center gap-2.5">
+          <img src="/restaurant/logo.png" alt="Local Bites Restaurant Partner" className="w-9 h-9 rounded-lg" />
+          <div>
+            <h1 className="text-lg font-semibold text-white">Local Bites — Restaurant</h1>
+            {profile && <p className="text-xs text-slate-500">{profile.name}</p>}
+          </div>
         </div>
         <button className="btn-ghost text-sm" onClick={logout}>
           Log out
@@ -34,17 +38,34 @@ export default function DashboardPage() {
           <button
             key={t.id}
             onClick={() => setActive(t.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
-              active === t.id ? 'bg-brand text-white' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+            className={`relative px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
+              active === t.id ? 'text-white' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
           >
-            {t.label}
+            {active === t.id && (
+              <motion.span
+                layoutId="restaurant-tab-bg"
+                className="absolute inset-0 bg-brand rounded-lg"
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+            )}
+            <span className="relative">{t.label}</span>
           </button>
         ))}
       </nav>
 
       <main className="px-4 sm:px-8 py-6">
-        <ActiveComponent />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ActiveComponent />
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );

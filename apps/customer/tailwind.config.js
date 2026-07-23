@@ -4,7 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: { DEFAULT: '#dc2626', dark: '#b91c1c' },
+        brand: {
+          DEFAULT: 'rgb(var(--brand-rgb) / <alpha-value>)',
+          dark: 'rgb(var(--brand-dark-rgb) / <alpha-value>)',
+        },
       },
     },
   },

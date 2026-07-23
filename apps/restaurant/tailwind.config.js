@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: { DEFAULT: '#ea580c', dark: '#c2410c' },
+        brand: { DEFAULT: '#16a34a', dark: '#15803d' },
       },
     },
   },

@@ -25,9 +25,12 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-slate-800 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-white">Local Bites — Delivery</h1>
-          {profile && <p className="text-xs text-slate-500">{profile.name}</p>}
+        <div className="flex items-center gap-2.5">
+          <img src="/delivery/logo.png" alt="Local Bites Delivery Partner" className="w-9 h-9 rounded-lg" />
+          <div>
+            <h1 className="text-lg font-semibold text-white">Local Bites — Delivery</h1>
+            {profile && <p className="text-xs text-slate-500">{profile.name}</p>}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <OnlineToggle isOnline={isOnline} onChange={setIsOnline} />

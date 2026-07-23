@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
 import { Screen } from './navigation';
@@ -58,7 +59,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      {renderScreen()}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={screen.name}
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -16 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+        >
+          {renderScreen()}
+        </motion.div>
+      </AnimatePresence>
       {NAV_SCREENS.includes(screen.name) && (
         <BottomNav active={screen.name} onNavigate={setScreen} cartCount={cartCount} />
       )}

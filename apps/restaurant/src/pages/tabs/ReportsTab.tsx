@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import { motion } from 'framer-motion';
 import { api } from '../../api/client';
 import { SalesReport } from '../../api/types';
 
@@ -23,7 +24,7 @@ export default function ReportsTab() {
   };
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="space-y-6 max-w-3xl">
       <form onSubmit={runReport} className="card space-y-3">
         <h2 className="font-semibold text-white">Sales report</h2>
         <div className="grid sm:grid-cols-2 gap-3">
@@ -36,28 +37,65 @@ export default function ReportsTab() {
             <input type="date" className="input" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
         </div>
-        <button className="btn-primary" disabled={loading}>
+        <motion.button whileTap={{ scale: 0.97 }} className="btn-primary" disabled={loading}>
           {loading ? 'Loading…' : 'Run report'}
-        </button>
+        </motion.button>
       </form>
 
       {report && (
-        <div className="card space-y-2">
-          <Row label="Delivered orders" value={report.orderCount} />
-          <Row label="Gross revenue" value={`₹${report.totalRevenue}`} />
-          <Row label="Platform commission" value={`₹${report.totalCommission}`} />
-          <Row label="Net payout" value={`₹${report.netPayout}`} strong />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Delivered orders" value={report.orderCount} icon="📦" delay={0} />
+          <StatCard label="Gross revenue" value={report.totalRevenue} prefix="₹" icon="💰" delay={0.05} />
+          <StatCard label="Platform commission" value={report.totalCommission} prefix="₹" icon="🧾" delay={0.1} />
+          <StatCard
+            label="Net payout"
+            value={report.netPayout}
+            prefix="₹"
+            icon="✅"
+            highlight
+            delay={0.15}
+          />
         </div>
       )}
     </div>
   );
 }
 
-function Row({ label, value, strong }: { label: string; value: string | number; strong?: boolean }) {
+function StatCard({
+  label,
+  value,
+  prefix = '',
+  icon,
+  highlight,
+  delay,
+}: {
+  label: string;
+  value: number;
+  prefix?: string;
+  icon: string;
+  highlight?: boolean;
+  delay: number;
+}) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-400">{label}</span>
-      <span className={strong ? 'text-white font-semibold' : 'text-slate-200'}>{value}</span>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3 }}
+      className={`card space-y-1 ${highlight ? 'ring-1 ring-brand/60' : ''}`}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-slate-400">{label}</span>
+        <span className="text-lg">{icon}</span>
+      </div>
+      <motion.p
+        initial={{ scale: 0.85 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: delay + 0.1, type: 'spring', stiffness: 300, damping: 18 }}
+        className={`text-2xl font-bold ${highlight ? 'text-brand' : 'text-white'}`}
+      >
+        {prefix}
+        {value.toLocaleString('en-IN')}
+      </motion.p>
+    </motion.div>
   );
 }

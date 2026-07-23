@@ -16,7 +16,14 @@ export default function RestaurantsTab() {
 
   const startEdit = (r: AdminRestaurant) => {
     setEditing(r._id);
-    setForm({ name: r.name, address: r.address, contactPhone: r.contactPhone, isOpen: r.isOpen });
+    setForm({
+      name: r.name,
+      address: r.address,
+      contactPhone: r.contactPhone,
+      isOpen: r.isOpen,
+      isFeatured: r.isFeatured ?? false,
+      featuredOrder: r.featuredOrder ?? 0,
+    });
   };
 
   const save = async (id: string) => {
@@ -56,6 +63,25 @@ export default function RestaurantsTab() {
                   />
                   Open for orders
                 </label>
+                <label className="flex items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={form.isFeatured ?? false}
+                    onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
+                  />
+                  Show in home page banner
+                </label>
+                {form.isFeatured && (
+                  <div>
+                    <label className="label">Banner order (lower shows first)</label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={form.featuredOrder ?? 0}
+                      onChange={(e) => setForm({ ...form, featuredOrder: Number(e.target.value) })}
+                    />
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <button className="btn-primary text-sm flex-1" onClick={() => save(r._id)}>
                     Save
@@ -75,6 +101,7 @@ export default function RestaurantsTab() {
                   <span className={`text-xs ${r.isOpen ? 'text-emerald-400' : 'text-slate-500'}`}>
                     {r.isOpen ? 'Open' : 'Closed'}
                   </span>
+                  {r.isFeatured && <span className="badge bg-amber-500/20 text-amber-300 text-xs">Featured #{r.featuredOrder ?? 0}</span>}
                   <button className="btn-ghost text-sm" onClick={() => startEdit(r)}>
                     Edit
                   </button>

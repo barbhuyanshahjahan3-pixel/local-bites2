@@ -13,6 +13,16 @@ const deliveryPartnerSchema = new mongoose.Schema(
     currentLng: Number,
     totalEarnings: { type: Number, default: 0 },
     totalDeliveries: { type: Number, default: 0 },
+    // One entry per browser/device that opted in to push notifications.
+    pushSubscriptions: [
+      {
+        endpoint: { type: String, required: true },
+        keys: {
+          p256dh: { type: String, required: true },
+          auth: { type: String, required: true },
+        },
+      },
+    ],
     ...staffAccountFields,
   },
   { timestamps: true }

@@ -13,6 +13,8 @@ export interface RestaurantSummary {
   ratingCount: number;
   cuisineTags: string[];
   city: string;
+  isFeatured?: boolean;
+  featuredOrder?: number;
 }
 
 export interface Category {
@@ -31,6 +33,7 @@ export interface Food {
   isVeg: boolean;
   isAvailable: boolean;
   imageUrl?: string;
+  images?: { url: string; publicId: string }[];
   avgRating: number;
 }
 

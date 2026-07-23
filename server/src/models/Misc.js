@@ -31,6 +31,14 @@ const platformSettingsSchema = new mongoose.Schema(
     key: { type: String, default: 'platform', unique: true },
     defaultCommissionPercent: { type: Number, default: 15 },
     defaultDeliveryCharge: { type: Number, default: 30 },
+    // Per-km delivery pricing: super admin sets a rate per km, and the actual
+    // charge for each order is computed from the real restaurant-to-customer
+    // distance (see server/src/utils/distance.js). defaultDeliveryCharge above
+    // is only used as a fallback when distance can't be determined (e.g. the
+    // customer didn't share a location).
+    perKmDeliveryRate: { type: Number, default: 8 },
+    minDeliveryCharge: { type: Number, default: 20 },
+    maxDeliveryCharge: { type: Number, default: 150 },
     contact: {
       phone: String,
       supportEmail: String,
@@ -40,6 +48,13 @@ const platformSettingsSchema = new mongoose.Schema(
     },
     razorpayEnabled: { type: Boolean, default: true },
     codEnabled: { type: Boolean, default: true },
+    // Super-admin-editable QR code + link shown in the customer app's profile so
+    // customers can share the app via WhatsApp/Instagram/Facebook.
+    shareQr: {
+      imageUrl: String,
+      imagePublicId: String,
+      link: String,
+    },
   },
   { timestamps: true }
 );

@@ -16,6 +16,8 @@ export interface AdminRestaurant {
   contactPhone: string;
   isOpen: boolean;
   cuisineTags: string[];
+  isFeatured?: boolean;
+  featuredOrder?: number;
 }
 
 export interface AdminDeliveryPartner {

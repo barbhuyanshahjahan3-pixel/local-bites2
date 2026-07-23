@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { fileToBase64 } from '../../api/fileToBase64';
+import NotificationSettingsCard from '../../components/NotificationSettingsCard';
 
 interface GalleryImage {
   url: string;
@@ -117,6 +118,8 @@ export default function ProfileTab() {
   return (
     <div className="space-y-6 max-w-2xl">
       {error && <p className="text-sm text-red-400">{error}</p>}
+
+      <NotificationSettingsCard />
 
       <div className="card space-y-3">
         <h2 className="font-semibold text-white">Restaurant profile</h2>

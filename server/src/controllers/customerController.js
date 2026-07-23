@@ -7,13 +7,14 @@ const { Order } = require('../models/Order');
 
 // GET /api/public/restaurants?cityId=&search=
 const listRestaurants = asyncHandler(async (req, res) => {
-  const { cityId, search } = req.query;
+  const { cityId, search, featured } = req.query;
   const filter = { isOpen: true };
   if (cityId) filter.city = cityId;
   if (search) filter.name = { $regex: search, $options: 'i' };
-  const restaurants = await Restaurant.find(filter).select(
-    'name logoUrl coverImageUrl avgRating ratingCount cuisineTags city'
-  );
+  if (featured === 'true') filter.isFeatured = true;
+  const restaurants = await Restaurant.find(filter)
+    .select('name logoUrl coverImageUrl avgRating ratingCount cuisineTags city isFeatured featuredOrder')
+    .sort({ featuredOrder: 1, avgRating: -1 });
   res.json({ success: true, restaurants });
 });
 

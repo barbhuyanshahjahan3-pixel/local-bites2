@@ -68,15 +68,28 @@ const addCategory = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, category });
 });
 
-// POST /api/restaurant/foods  { categoryId, name, description, price, offerPrice, isVeg, imageBase64 }
+// POST /api/restaurant/foods  { categoryId, name, description, price, offerPrice, isVeg, imagesBase64: string[] }
+// imagesBase64 accepts up to 5 data-URI images. `imageBase64` (single, legacy) is still accepted for older clients.
 const addFood = asyncHandler(async (req, res) => {
-  const { categoryId, name, description, price, offerPrice, isVeg, imageBase64 } = req.body;
-  let imageUrl, imagePublicId;
-  if (imageBase64) {
-    const uploaded = await uploadImage(imageBase64, 'local-bites/food');
-    imageUrl = uploaded.url;
-    imagePublicId = uploaded.publicId;
+  const { categoryId, name, description, price, offerPrice, isVeg, imageBase64, imagesBase64 } = req.body;
+
+  const rawImages = (Array.isArray(imagesBase64) ? imagesBase64 : imageBase64 ? [imageBase64] : []).filter(Boolean);
+  if (rawImages.length > 5) {
+    res.status(400);
+    throw new Error('You can upload at most 5 photos per item');
   }
+
+  let images = [];
+  if (rawImages.length) {
+    try {
+      images = await Promise.all(rawImages.map((img) => uploadImage(img, 'local-bites/food')));
+    } catch (err) {
+      // Surface a clear error instead of silently creating the item without photos
+      res.status(502);
+      throw new Error('Image upload failed — please try again with a smaller photo. (' + err.message + ')');
+    }
+  }
+
   const food = await Food.create({
     restaurant: req.user.id,
     category: categoryId,
@@ -85,8 +98,9 @@ const addFood = asyncHandler(async (req, res) => {
     price,
     offerPrice: offerPrice ?? null,
     isVeg,
-    imageUrl,
-    imagePublicId,
+    images: images.map((i) => ({ url: i.url, publicId: i.publicId })),
+    imageUrl: images[0]?.url,
+    imagePublicId: images[0]?.publicId,
   });
   res.status(201).json({ success: true, food });
 });
@@ -98,13 +112,36 @@ const editFood = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Food not found');
   }
-  const { name, description, price, offerPrice, isVeg, isAvailable, imageBase64 } = req.body;
-  if (imageBase64) {
-    await deleteImage(food.imagePublicId);
-    const uploaded = await uploadImage(imageBase64, 'local-bites/food');
-    food.imageUrl = uploaded.url;
-    food.imagePublicId = uploaded.publicId;
+  const { name, description, price, offerPrice, isVeg, isAvailable, imageBase64, imagesBase64, removePublicIds } =
+    req.body;
+
+  let images = food.images || [];
+  if (Array.isArray(removePublicIds) && removePublicIds.length) {
+    const toRemove = images.filter((img) => removePublicIds.includes(img.publicId));
+    await Promise.all(toRemove.map((img) => deleteImage(img.publicId).catch(() => {})));
+    images = images.filter((img) => !removePublicIds.includes(img.publicId));
   }
+
+  const newRaw = (Array.isArray(imagesBase64) ? imagesBase64 : imageBase64 ? [imageBase64] : []).filter(Boolean);
+  if (newRaw.length) {
+    if (images.length + newRaw.length > 5) {
+      res.status(400);
+      throw new Error('You can upload at most 5 photos per item');
+    }
+    let uploaded;
+    try {
+      uploaded = await Promise.all(newRaw.map((img) => uploadImage(img, 'local-bites/food')));
+    } catch (err) {
+      res.status(502);
+      throw new Error('Image upload failed — please try again with a smaller photo. (' + err.message + ')');
+    }
+    images = [...images, ...uploaded.map((i) => ({ url: i.url, publicId: i.publicId }))];
+  }
+
+  food.images = images;
+  food.imageUrl = images[0]?.url;
+  food.imagePublicId = images[0]?.publicId;
+
   Object.assign(food, {
     name: name ?? food.name,
     description: description ?? food.description,
@@ -124,7 +161,7 @@ const deleteFood = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Food not found');
   }
-  await deleteImage(food.imagePublicId);
+  await Promise.all((food.images || []).map((img) => deleteImage(img.publicId).catch(() => {})));
   await food.deleteOne();
   res.json({ success: true });
 });
@@ -152,6 +189,33 @@ const salesReport = asyncHandler(async (req, res) => {
   });
 });
 
+// POST /api/restaurant/push-subscribe — body is the PushSubscription object
+// the browser gave us (endpoint + keys). Called once per device after the
+// restaurant grants notification permission.
+const subscribePush = asyncHandler(async (req, res) => {
+  const { endpoint, keys } = req.body;
+  if (!endpoint || !keys?.p256dh || !keys?.auth) {
+    res.status(400);
+    throw new Error('Invalid push subscription');
+  }
+  await Restaurant.updateOne({ _id: req.user.id }, { $pull: { pushSubscriptions: { endpoint } } });
+  await Restaurant.updateOne(
+    { _id: req.user.id },
+    { $push: { pushSubscriptions: { endpoint, keys } } }
+  );
+  res.json({ success: true });
+});
+
+// DELETE /api/restaurant/push-subscribe — body: { endpoint }. Called when the
+// restaurant turns notifications off on a device.
+const unsubscribePush = asyncHandler(async (req, res) => {
+  await Restaurant.updateOne(
+    { _id: req.user.id },
+    { $pull: { pushSubscriptions: { endpoint: req.body.endpoint } } }
+  );
+  res.json({ success: true });
+});
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -164,4 +228,6 @@ module.exports = {
   editFood,
   deleteFood,
   salesReport,
+  subscribePush,
+  unsubscribePush,
 };

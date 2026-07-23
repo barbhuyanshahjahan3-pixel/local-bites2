@@ -20,9 +20,25 @@ const restaurantSchema = new mongoose.Schema(
     contactPhone: { type: String, required: true },
     cuisineTags: [String],
     isOpen: { type: Boolean, default: true }, // toggled by restaurant (e.g. closing time)
+    // Set by admin/super-admin only — controls the "featured restaurants" banner strip
+    // on the customer home page. Lower featuredOrder shows first; isFeatured must be
+    // true for a restaurant to appear in the banner at all.
+    isFeatured: { type: Boolean, default: false },
+    featuredOrder: { type: Number, default: 0 },
     avgRating: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
     commissionPercentOverride: { type: Number, default: null },
+    // One entry per browser/device that opted in to push notifications.
+    // Multiple entries are normal (e.g. phone + desktop both subscribed).
+    pushSubscriptions: [
+      {
+        endpoint: { type: String, required: true },
+        keys: {
+          p256dh: { type: String, required: true },
+          auth: { type: String, required: true },
+        },
+      },
+    ],
     ...staffAccountFields,
   },
   { timestamps: true }

@@ -3,15 +3,18 @@ node_modules/
 
 # Build output
 dist/
-dist-ssr/
+build/
 
-# Environment files (contain secrets — never commit these)
+# Environment files with real secrets — never commit these.
+# The .env.example files ARE meant to be committed (they have no secrets).
 .env
 .env.local
 .env.*.local
+apps/*/.env
+apps/*/.env.local
+server/.env
 
-# Editor/OS
+# Editor / OS
 .DS_Store
-*.log
 .vscode/
-.idea/
+*.log

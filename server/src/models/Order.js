@@ -48,6 +48,7 @@ const orderSchema = new mongoose.Schema(
     items: [orderItemSchema],
     itemsTotal: { type: Number, required: true },
     deliveryCharge: { type: Number, required: true },
+    deliveryDistanceKm: { type: Number, default: null },
     platformCommission: { type: Number, required: true }, // computed at order time, restaurant payout basis
     grandTotal: { type: Number, required: true },
 

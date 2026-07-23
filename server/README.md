@@ -27,9 +27,14 @@ temporary password and **must** change it on first login
 cd server
 cp .env.example .env   # fill in Mongo URI, JWT secret, Cloudinary, Razorpay keys
 npm install
+npm run generate:vapid   # one-time: prints VAPID keys for push notifications — paste into .env
 npm run seed:superadmin   # one-time: creates the single initial Super Admin
 npm run dev
 ```
+
+Also copy the `VITE_VAPID_PUBLIC_KEY` line printed by `generate:vapid` into
+`apps/restaurant/.env` and `apps/delivery/.env` — without it, the "turn on
+notifications" button in those apps will show a config error.
 
 The seed script prints the Super Admin's access code and temporary password —
 save them, then log in via `POST /api/auth/staff-login` with
@@ -62,6 +67,16 @@ Only the assigned delivery partner receives that information, via
 Clients connect with `{ auth: { token: <jwt> } }`. Rooms:
 `customer:<id>`, `restaurant:<id>`, `partner:<id>`,
 `delivery-pool:<cityId>`, `admin-room`. See `src/sockets/`.
+
+## Push notifications (Web Push)
+
+Socket.IO above only reaches a restaurant/delivery partner while their
+dashboard tab is open and connected. For alerts that reach their phone even
+with the app fully closed, the restaurant and delivery apps also register
+for browser Push notifications (`src/utils/webPush.js`, VAPID-based). New
+paid orders push to the restaurant; orders becoming `ready_for_pickup` (or
+re-queued after a rejection) push to every online delivery partner in that
+city. See `npm run generate:vapid` above for setup.
 
 ## Payments
 

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { AssignedOrder } from '../../api/types';
+import DeliveryMap from '../../components/DeliveryMap';
+import { useLiveLocationReporter } from '../../hooks/useLiveLocationReporter';
 
 const STEP_ACTIONS: Record<string, { action: string; label: string } | null> = {
   delivery_accepted: { action: 'pickup', label: 'Mark picked up' },
@@ -11,6 +13,7 @@ const STEP_ACTIONS: Record<string, { action: string; label: string } | null> = {
 export default function MyDeliveryTab({ refreshKey }: { refreshKey: number }) {
   const [order, setOrder] = useState<AssignedOrder | null>(null);
   const [loading, setLoading] = useState(false);
+  const selfPosition = useLiveLocationReporter(!!order);
 
   const load = () =>
     api.get<{ order: AssignedOrder | null }>('/api/delivery/my-order').then((r) => setOrder(r.order));
@@ -77,6 +80,17 @@ export default function MyDeliveryTab({ refreshKey }: { refreshKey: number }) {
           <p className="label">Deliver to</p>
           <p className="text-sm text-slate-200">{order.deliveryAddress}</p>
         </div>
+        {(order.restaurant?.lat || order.deliveryLat) && (
+          <DeliveryMap
+            pickup={
+              order.restaurant?.lat && order.restaurant?.lng
+                ? { lat: order.restaurant.lat, lng: order.restaurant.lng }
+                : null
+            }
+            drop={order.deliveryLat && order.deliveryLng ? { lat: order.deliveryLat, lng: order.deliveryLng } : null}
+            self={selfPosition}
+          />
+        )}
         <div>
           <p className="label">Order</p>
           <ul className="text-sm text-slate-400">

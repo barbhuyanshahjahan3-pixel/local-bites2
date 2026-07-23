@@ -16,8 +16,16 @@ const foodSchema = new mongoose.Schema(
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
     name: { type: String, required: true, trim: true },
     description: String,
-    imageUrl: String,
+    imageUrl: String, // kept in sync with images[0] for backward compatibility
     imagePublicId: String,
+    images: {
+      type: [{ url: String, publicId: String }],
+      validate: {
+        validator: (arr) => !arr || arr.length <= 5,
+        message: 'A food item can have at most 5 photos',
+      },
+      default: [],
+    },
     price: { type: Number, required: true, min: 0 },
     offerPrice: { type: Number, default: null }, // null = no active offer
     isVeg: { type: Boolean, default: true },

@@ -2,7 +2,10 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { API_URL } from '../api/client';
 
-export function useCustomerSocket(onOrderStatus: (payload: { orderId: string; status: string }) => void) {
+export function useCustomerSocket(
+  onOrderStatus: (payload: { orderId: string; status: string }) => void,
+  onPartnerLocation?: (payload: { orderId: string; lat: number; lng: number }) => void
+) {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -11,6 +14,7 @@ export function useCustomerSocket(onOrderStatus: (payload: { orderId: string; st
     const socket = io(API_URL, { auth: { token } });
     socketRef.current = socket;
     socket.on('order_status', onOrderStatus);
+    if (onPartnerLocation) socket.on('partner_location', onPartnerLocation);
     return () => {
       socket.disconnect();
     };

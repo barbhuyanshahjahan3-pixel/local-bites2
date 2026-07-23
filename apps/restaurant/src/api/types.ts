@@ -14,6 +14,7 @@ export interface Food {
   isVeg: boolean;
   isAvailable: boolean;
   imageUrl?: string;
+  images?: { url: string; publicId: string }[];
 }
 
 export interface OrderItem {

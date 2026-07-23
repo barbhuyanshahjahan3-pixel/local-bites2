@@ -18,6 +18,8 @@ router.delete('/admins/:id', ctrl.removeAdmin);
 router.post('/cities', ctrl.addCity);
 router.delete('/cities/:id', ctrl.removeCity);
 
+router.get('/settings', ctrl.getPlatformSettings);
 router.patch('/settings', ctrl.updatePlatformSettings);
+router.patch('/share-qr', ctrl.updateShareQr);
 
 module.exports = router;

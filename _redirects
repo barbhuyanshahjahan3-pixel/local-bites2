@@ -1,0 +1,10 @@
+# Each dashboard is a single-page app living under its own sub-path.
+# These make deep links / page refreshes inside a dashboard fall back to
+# that dashboard's index.html instead of a 404.
+/restaurant/*   /restaurant/index.html   200
+/delivery/*     /delivery/index.html     200
+/admin/*        /admin/index.html        200
+/super-admin/*  /super-admin/index.html  200
+
+# Customer app owns everything else at the root.
+/*              /index.html              200

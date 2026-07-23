@@ -3,7 +3,9 @@ const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const { protect, allowRoles } = require('../middleware/auth');
 const { Order } = require('../models/Order');
+const Restaurant = require('../models/Restaurant');
 const { emitToRestaurant } = require('../sockets/emit');
+const { sendPushToSubscriptions } = require('../utils/webPush');
 
 // POST /api/payments/verify (customer)
 // Body: { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature }
@@ -43,6 +45,25 @@ router.post(
       orderNumber: order.orderNumber,
       items: order.items,
     });
+
+    // Also fire a real push notification — this is what reaches the restaurant's
+    // phone even if they've closed the app/browser entirely. The socket event
+    // above only fires while the dashboard tab is open and connected.
+    const restaurant = await Restaurant.findById(order.restaurant).select('pushSubscriptions');
+    if (restaurant?.pushSubscriptions?.length) {
+      const { deadEndpoints } = await sendPushToSubscriptions(restaurant.pushSubscriptions, {
+        title: `New order ${order.orderNumber}`,
+        body: `${order.items.length} item${order.items.length > 1 ? 's' : ''} · ₹${order.itemsTotal} · tap to view`,
+        url: '/restaurant/',
+        tag: `order-${order._id}`,
+      });
+      if (deadEndpoints.length) {
+        await Restaurant.updateOne(
+          { _id: restaurant._id },
+          { $pull: { pushSubscriptions: { endpoint: { $in: deadEndpoints } } } }
+        );
+      }
+    }
 
     res.json({ success: true, order });
   })

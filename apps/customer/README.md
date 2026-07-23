@@ -29,8 +29,11 @@ same number.
   shows the exact required confirmation message and verifies payment
   signature server-side before marking paid.
 - **Order tracking** — live status timeline via Socket.IO, falls back to
-  whatever's already in `statusHistory` on load. Leave a rating + review once
-  delivered.
+  whatever's already in `statusHistory` on load. Once a rider is assigned
+  (accepted/picked up/on the way), a live map (free OpenStreetMap tiles via
+  Leaflet — no API key needed) shows the restaurant, your delivery address,
+  and the delivery partner's position updating in real time as they move.
+  Leave a rating + review once delivered.
 - **Order history**, **Wishlist**, **Profile**, **Support/complaints** with
   status tracking.
 

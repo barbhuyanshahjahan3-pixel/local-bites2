@@ -10,7 +10,7 @@ const app = express();
 const allowedOrigins = (process.env.CLIENT_URLS || '').split(',').map((s) => s.trim());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(helmet());
-app.use(express.json({ limit: '5mb' })); // generous limit to allow base64 image payloads
+app.use(express.json({ limit: '20mb' })); // generous limit — client compresses images before upload, but this covers up to 5 photos + headroom
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 app.use(

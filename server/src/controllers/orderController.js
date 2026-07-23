@@ -2,8 +2,31 @@ const asyncHandler = require('express-async-handler');
 const Razorpay = require('razorpay');
 const { Order } = require('../models/Order');
 const Restaurant = require('../models/Restaurant');
+const DeliveryPartner = require('../models/DeliveryPartner');
 const { PlatformSettings } = require('../models/Misc');
+const { getDistanceKm, computeDeliveryCharge } = require('../utils/distance');
 const { emitToRestaurant, emitToCustomer, emitToDeliveryPool, emitToPartner } = require('../sockets/emit');
+const { sendPushToSubscriptions } = require('../utils/webPush');
+
+// Pushes a "new delivery available" notification to every online delivery
+// partner's phone in the given city — reaches them even if they've closed
+// the delivery app, unlike the emitToDeliveryPool socket event which only
+// reaches partners with the app open right now.
+async function pushToOnlinePartners(cityId, payload) {
+  const partners = await DeliveryPartner.find({ city: cityId, isOnline: true }).select(
+    'pushSubscriptions'
+  );
+  for (const partner of partners) {
+    if (!partner.pushSubscriptions?.length) continue;
+    const { deadEndpoints } = await sendPushToSubscriptions(partner.pushSubscriptions, payload);
+    if (deadEndpoints.length) {
+      await DeliveryPartner.updateOne(
+        { _id: partner._id },
+        { $pull: { pushSubscriptions: { endpoint: { $in: deadEndpoints } } } }
+      );
+    }
+  }
+}
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -41,8 +64,25 @@ const placeOrder = asyncHandler(async (req, res) => {
   }
 
   const settings = await PlatformSettings.findOne({ key: 'platform' });
-  const deliveryCharge =
-    restaurant.city.deliveryChargeOverride ?? settings?.defaultDeliveryCharge ?? 30;
+
+  // Per-km delivery charge: computed from the real distance between the
+  // restaurant and the customer's delivery location. Falls back to the flat
+  // defaultDeliveryCharge (or the city's override) if either location is
+  // missing so an order can still be placed.
+  let distanceKm = null;
+  let distanceSource = null;
+  if (restaurant.lat != null && restaurant.lng != null && lat != null && lng != null) {
+    const result = await getDistanceKm(restaurant.lat, restaurant.lng, lat, lng);
+    distanceKm = Math.round(result.distanceKm * 10) / 10;
+    distanceSource = result.source;
+  }
+  const flatFallback = restaurant.city.deliveryChargeOverride ?? settings?.defaultDeliveryCharge ?? 30;
+  const deliveryCharge = computeDeliveryCharge(distanceKm, {
+    perKmRate: settings?.perKmDeliveryRate ?? 8,
+    minCharge: settings?.minDeliveryCharge ?? 20,
+    maxCharge: settings?.maxDeliveryCharge ?? 150,
+    flatFallback,
+  });
   const commissionPercent =
     restaurant.commissionPercentOverride ??
     restaurant.city.commissionPercentOverride ??
@@ -67,6 +107,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     items: orderItems,
     itemsTotal,
     deliveryCharge,
+    deliveryDistanceKm: distanceKm,
     platformCommission,
     grandTotal,
     paymentMethod,
@@ -148,6 +189,12 @@ const updateRestaurantStatus = asyncHandler(async (req, res) => {
       orderNumber: order.orderNumber,
       restaurantName: undefined, // populate on client via restaurant id if needed
     });
+    pushToOnlinePartners(order.city, {
+      title: 'New delivery available',
+      body: `${order.orderNumber} · ₹${order.deliveryCharge} delivery charge — tap to view`,
+      url: '/delivery/',
+      tag: `delivery-${order._id}`,
+    }).catch((err) => console.error('[push] ready_for_pickup broadcast failed:', err.message));
   }
 
   res.json({ success: true, order });
@@ -183,6 +230,12 @@ const updateDeliveryStatus = asyncHandler(async (req, res) => {
       orderId: order._id,
       orderNumber: order.orderNumber,
     });
+    pushToOnlinePartners(order.city, {
+      title: 'Delivery available',
+      body: `${order.orderNumber} was re-queued — tap to view`,
+      url: '/delivery/',
+      tag: `delivery-${order._id}`,
+    }).catch((err) => console.error('[push] re-queue broadcast failed:', err.message));
   } else if (['pickup', 'on_the_way', 'delivered'].includes(action)) {
     if (String(order.deliveryPartner) !== req.user.id) {
       res.status(403);
@@ -258,10 +311,9 @@ const getOrderForDeliveryPartner = asyncHandler(async (req, res) => {
 
 // GET /api/orders/mine/:id (customer) — includes full status history for tracking
 const getMyOrderDetail = asyncHandler(async (req, res) => {
-  const order = await Order.findOne({ _id: req.params.id, customer: req.user.id }).populate(
-    'restaurant',
-    'name'
-  );
+  const order = await Order.findOne({ _id: req.params.id, customer: req.user.id })
+    .populate('restaurant', 'name lat lng address')
+    .populate('deliveryPartner', 'name currentLat currentLng vehicleType');
   if (!order) {
     res.status(404);
     throw new Error('Order not found');

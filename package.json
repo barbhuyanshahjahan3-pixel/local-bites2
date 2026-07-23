@@ -2,8 +2,9 @@
   "name": "local-bites-web",
   "private": true,
   "version": "1.0.0",
-  "description": "Combined Netlify build for all Local Bites frontend apps (customer, restaurant, delivery, admin, super-admin)",
+  "description": "Combined build for all Local Bites frontend apps (customer, restaurant, delivery, admin, super-admin)",
   "scripts": {
-    "build": "bash build-netlify.sh"
+    "build": "bash build-netlify.sh",
+    "build:cloudflare": "bash build-cloudflare.sh"
   }
 }

@@ -29,7 +29,7 @@ const listCustomers = asyncHandler(async (req, res) => {
 
 // PATCH /api/admin/restaurants/:id
 const editRestaurant = asyncHandler(async (req, res) => {
-  const allowed = ['name', 'description', 'address', 'contactPhone', 'cuisineTags', 'isOpen'];
+  const allowed = ['name', 'description', 'address', 'contactPhone', 'cuisineTags', 'isOpen', 'isFeatured', 'featuredOrder'];
   const updates = {};
   allowed.forEach((k) => {
     if (req.body[k] !== undefined) updates[k] = req.body[k];

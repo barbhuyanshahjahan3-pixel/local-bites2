@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Single source of truth for the app's brand color. Every bg-brand /
+   text-brand / border-brand / etc. utility (see tailwind.config.js)
+   resolves through these two variables, so the whole app is always
+   exactly one color — and the in-app theme picker (Profile > App theme)
+   changes it everywhere at once just by overwriting these. */
+:root {
+  --brand-rgb: 234 88 12; /* orange #ea580c */
+  --brand-dark-rgb: 194 65 12; /* orange-dark #c2410c */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .card {
   @apply bg-slate-900 border border-slate-800 rounded-xl p-5;
 }

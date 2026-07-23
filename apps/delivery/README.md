@@ -23,9 +23,14 @@ your access code + temp password, then set a permanent password.
   load and refreshed instantly when the server broadcasts a new one. First
   to accept wins (server rejects the second accept with a 409).
 - **Current** — your single active delivery: customer name/mobile/address
-  (only visible to the assigned partner), order items, and a step-by-step
-  pickup → on the way → delivered flow. Can reject to re-queue for another
-  rider.
+  (only visible to the assigned partner), a live map (free OpenStreetMap
+  tiles via Leaflet — no API key needed) showing the restaurant pickup
+  point, the customer's drop point, and your own live position, plus a
+  one-tap "Open turn-by-turn navigation" link to Google Maps; order items;
+  and a step-by-step pickup → on the way → delivered flow. Can reject to
+  re-queue for another rider. While you have an active delivery, your GPS
+  position is reported to the server every ~12s so the customer can watch
+  you approach on their own tracking map.
 - **History** — completed deliveries, with a PDF export button (streams
   from the backend's `pdfkit`-generated PDF).
 - **Earnings** — running total earned and deliveries completed.

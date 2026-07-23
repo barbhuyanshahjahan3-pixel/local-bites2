@@ -4,6 +4,7 @@ const DeliveryPartner = require('../models/DeliveryPartner');
 const { Admin } = require('../models/AdminModels');
 const City = require('../models/City');
 const { PlatformSettings } = require('../models/Misc');
+const { uploadImage, deleteImage } = require('../config/cloudinary');
 const { hashPassword, generateAccessCode, generateTempPassword } = require('../utils/authUtils');
 
 // POST /api/superadmin/restaurants
@@ -133,6 +134,12 @@ const removeCity = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+// GET /api/superadmin/settings
+const getPlatformSettings = asyncHandler(async (req, res) => {
+  const settings = (await PlatformSettings.findOne({ key: 'platform' })) || {};
+  res.json({ success: true, settings });
+});
+
 // PATCH /api/superadmin/settings
 const updatePlatformSettings = asyncHandler(async (req, res) => {
   const settings = await PlatformSettings.findOneAndUpdate({ key: 'platform' }, req.body, {
@@ -140,6 +147,32 @@ const updatePlatformSettings = asyncHandler(async (req, res) => {
     upsert: true,
   });
   res.json({ success: true, settings });
+});
+
+// PATCH /api/superadmin/share-qr  { imageBase64?, link? }
+// Lets the super admin set/replace the QR code image and link shown in the customer
+// app's profile, so customers can share the app via WhatsApp/Instagram/Facebook.
+// Editable any time in future — nothing here is hardcoded.
+const updateShareQr = asyncHandler(async (req, res) => {
+  const { imageBase64, link } = req.body;
+  const settings = (await PlatformSettings.findOne({ key: 'platform' })) || new PlatformSettings();
+
+  if (imageBase64) {
+    if (settings.shareQr?.imagePublicId) {
+      await deleteImage(settings.shareQr.imagePublicId).catch(() => {});
+    }
+    const uploaded = await uploadImage(imageBase64, 'local-bites/share-qr');
+    settings.shareQr = {
+      imageUrl: uploaded.url,
+      imagePublicId: uploaded.publicId,
+      link: link !== undefined ? link : settings.shareQr?.link,
+    };
+  } else if (link !== undefined) {
+    settings.shareQr = { ...(settings.shareQr?.toObject?.() || settings.shareQr || {}), link };
+  }
+
+  await settings.save();
+  res.json({ success: true, shareQr: settings.shareQr });
 });
 
 module.exports = {
@@ -153,5 +186,7 @@ module.exports = {
   removeDeliveryPartner,
   addCity,
   removeCity,
+  getPlatformSettings,
   updatePlatformSettings,
+  updateShareQr,
 };

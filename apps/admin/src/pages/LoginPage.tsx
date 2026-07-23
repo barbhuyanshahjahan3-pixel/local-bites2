@@ -23,7 +23,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 relative">
       <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4">
         <div>
           <h1 className="text-xl font-semibold text-white">Local Bites</h1>
@@ -54,6 +54,9 @@ export default function LoginPage() {
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
+      <p className="absolute bottom-4 text-center text-xs text-slate-600">
+        © 2026 Local Bites — Designed &amp; Developed by Shahjahan
+      </p>
     </div>
   );
 }

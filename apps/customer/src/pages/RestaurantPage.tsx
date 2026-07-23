@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/client';
 import { Food, RestaurantDetail } from '../api/types';
 import { useCart } from '../context/CartContext';
 import { Screen } from '../navigation';
+import PhotoCarousel from '../components/PhotoCarousel';
 
 export default function RestaurantPage({
   restaurantId,
@@ -13,6 +15,8 @@ export default function RestaurantPage({
 }) {
   const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
   const [foods, setFoods] = useState<Food[]>([]);
+  const [galleryFood, setGalleryFood] = useState<Food | null>(null);
+  const [justAdded, setJustAdded] = useState<string | null>(null);
   const { addItem, lines } = useCart();
 
   useEffect(() => {
@@ -28,6 +32,12 @@ export default function RestaurantPage({
     await api.post(`/api/customer/wishlist/${foodId}`);
   };
 
+  const handleAdd = (f: Food) => {
+    addItem(f, restaurant!._id);
+    setJustAdded(f._id);
+    setTimeout(() => setJustAdded((cur) => (cur === f._id ? null : cur)), 500);
+  };
+
   const quantityOf = (foodId: string) => lines.find((l) => l.food._id === foodId)?.quantity || 0;
 
   const grouped = foods.reduce<Record<string, Food[]>>((acc, f) => {
@@ -36,7 +46,15 @@ export default function RestaurantPage({
     return acc;
   }, {});
 
-  if (!restaurant) return <p className="px-4 py-6 text-sm text-slate-500">Loading…</p>;
+  if (!restaurant) {
+    return (
+      <div className="px-4 py-4 space-y-3 animate-pulse">
+        <div className="h-40 w-full rounded-xl bg-slate-800" />
+        <div className="h-5 w-2/3 bg-slate-800 rounded" />
+        <div className="h-3 w-1/2 bg-slate-800 rounded" />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-24">
@@ -45,7 +63,14 @@ export default function RestaurantPage({
       </button>
 
       {restaurant.coverImageUrl && (
-        <img src={restaurant.coverImageUrl} alt={restaurant.name} className="w-full h-40 object-cover" />
+        <motion.img
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          src={restaurant.coverImageUrl}
+          alt={restaurant.name}
+          className="w-full h-40 object-cover"
+        />
       )}
       <div className="px-4 py-3">
         <h1 className="text-xl font-semibold text-white">{restaurant.name}</h1>
@@ -99,10 +124,31 @@ export default function RestaurantPage({
           <section key={category}>
             <h2 className="font-semibold text-white mb-2">{category}</h2>
             <div className="space-y-2">
-              {items.map((f) => (
-                <div key={f._id} className="card flex gap-3">
+              {items.map((f, idx) => (
+                <motion.div
+                  key={f._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(idx * 0.03, 0.2), duration: 0.2 }}
+                  className="card flex gap-3"
+                >
                   {f.imageUrl && (
-                    <img src={f.imageUrl} alt={f.name} className="w-20 h-20 rounded-lg object-cover shrink-0" />
+                    <div className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden">
+                      {(f.images?.length ?? 0) > 1 ? (
+                        <>
+                          <PhotoCarousel
+                            images={f.images!}
+                            className="w-20 h-20"
+                            onOpenFullscreen={() => setGalleryFood(f)}
+                          />
+                          <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded-full pointer-events-none">
+                            +{(f.images?.length ?? 1) - 1}
+                          </span>
+                        </>
+                      ) : (
+                        <img src={f.imageUrl} alt={f.name} className="w-20 h-20 rounded-lg object-cover" />
+                      )}
+                    </div>
                   )}
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
@@ -119,32 +165,75 @@ export default function RestaurantPage({
                       </p>
                       {f.isAvailable ? (
                         quantityOf(f._id) > 0 ? (
-                          <span className="badge bg-brand/20 text-brand">{quantityOf(f._id)} in cart</span>
+                          <motion.span
+                            key={quantityOf(f._id)}
+                            initial={{ scale: 0.7 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                            className="badge bg-brand/20 text-brand"
+                          >
+                            {quantityOf(f._id)} in cart
+                          </motion.span>
                         ) : (
-                          <button className="btn-primary text-sm py-1" onClick={() => addItem(f, restaurant._id)}>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            animate={justAdded === f._id ? { scale: [1, 1.15, 1] } : {}}
+                            transition={{ duration: 0.35 }}
+                            className="btn-primary text-sm py-1"
+                            onClick={() => handleAdd(f)}
+                          >
                             Add
-                          </button>
+                          </motion.button>
                         )
                       ) : (
                         <span className="text-xs text-slate-500">Unavailable</span>
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </section>
         ))}
       </div>
 
-      {lines.length > 0 && (
-        <button
-          onClick={() => onNavigate({ name: 'cart' })}
-          className="fixed bottom-16 inset-x-4 btn-primary shadow-lg"
-        >
-          View cart ({lines.reduce((s, l) => s + l.quantity, 0)})
-        </button>
-      )}
+      <AnimatePresence>
+        {lines.length > 0 && (
+          <motion.button
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            onClick={() => onNavigate({ name: 'cart' })}
+            className="fixed bottom-16 inset-x-4 btn-primary shadow-lg"
+          >
+            View cart ({lines.reduce((s, l) => s + l.quantity, 0)})
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {galleryFood && galleryFood.images && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center px-4"
+            onClick={() => setGalleryFood(null)}
+          >
+            <button
+              className="absolute top-4 right-4 text-white text-2xl leading-none"
+              onClick={() => setGalleryFood(null)}
+            >
+              ×
+            </button>
+            <div className="max-h-[70vh] w-full rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <PhotoCarousel images={galleryFood.images} className="w-full h-[60vh]" />
+            </div>
+            <p className="text-white font-medium mt-3">{galleryFood.name}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

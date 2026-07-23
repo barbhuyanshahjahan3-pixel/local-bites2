@@ -1,5 +1,8 @@
 const cloudinary = require('cloudinary').v2;
 
+// Cloudinary free tier needs no credit card. Configure once here using
+// credentials from Cloudinary dashboard > Home (Account Details card):
+//   Cloud name, API Key, API Secret
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -7,15 +10,16 @@ cloudinary.config({
 });
 
 /**
- * Uploads a base64 or file-path image to Cloudinary under a given folder.
- * @param {string} filePathOrBase64
- * @param {string} folder e.g. 'local-bites/food', 'local-bites/restaurants'
+ * Uploads a base64 image data URI to Cloudinary under a given folder.
+ * Same signature and return shape as the old R2/Cloudinary uploadImage, so
+ * callers (restaurantController, superAdminController) don't need changes.
+ * @param {string} base64DataUri e.g. "data:image/jpeg;base64,...."
+ * @param {string} folder e.g. 'local-bites/food', 'local-bites/restaurant-gallery'
  */
-const uploadImage = async (filePathOrBase64, folder) => {
-  const result = await cloudinary.uploader.upload(filePathOrBase64, {
+const uploadImage = async (base64DataUri, folder) => {
+  const result = await cloudinary.uploader.upload(base64DataUri, {
     folder,
     resource_type: 'image',
-    transformation: [{ width: 1200, crop: 'limit' }, { quality: 'auto' }],
   });
   return { url: result.secure_url, publicId: result.public_id };
 };
@@ -25,4 +29,4 @@ const deleteImage = async (publicId) => {
   await cloudinary.uploader.destroy(publicId);
 };
 
-module.exports = { cloudinary, uploadImage, deleteImage };
+module.exports = { uploadImage, deleteImage };

@@ -18,6 +18,9 @@ router.patch('/foods/:id', ctrl.editFood);
 router.delete('/foods/:id', ctrl.deleteFood);
 router.get('/reports/sales', ctrl.salesReport);
 
+router.post('/push-subscribe', ctrl.subscribePush);
+router.delete('/push-subscribe', ctrl.unsubscribePush);
+
 router.get('/orders', orderCtrl.getRestaurantOrders);
 router.patch('/orders/:id/status', orderCtrl.updateRestaurantStatus);
 

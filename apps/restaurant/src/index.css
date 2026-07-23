@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 .card {
   @apply bg-slate-900 border border-slate-800 rounded-xl p-5;
 }

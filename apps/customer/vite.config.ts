@@ -12,7 +12,7 @@ export default defineConfig({
         name: 'Local Bites',
         short_name: 'Local Bites',
         description: 'Order food from local restaurants in Hojai and beyond',
-        theme_color: '#dc2626',
+        theme_color: '#ea580c',
         background_color: '#0f172a',
         display: 'standalone',
         start_url: '/',
