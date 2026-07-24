@@ -16,13 +16,6 @@ export function getPushPermissionState(): NotificationPermission | 'unsupported'
   return Notification.permission;
 }
 
-export async function isPushSubscribed(): Promise<boolean> {
-  if (!isPushSupported()) return false;
-  const reg = await navigator.serviceWorker.ready;
-  const sub = await reg.pushManager.getSubscription();
-  return !!sub;
-}
-
 export async function enablePushNotifications(): Promise<void> {
   if (!isPushSupported()) throw new Error('Push notifications are not supported on this device/browser.');
 
@@ -37,7 +30,7 @@ export async function enablePushNotifications(): Promise<void> {
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
     });
   }
 
