@@ -1,7 +1,3 @@
-import { api } from '../api/client';
-
-// Converts the VAPID public key (base64url string from .env) into the
-// Uint8Array format the Push API expects.
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -18,15 +14,6 @@ export function getPushPermissionState(): NotificationPermission | 'unsupported'
   return Notification.permission;
 }
 
-/** Returns true if this device is currently subscribed. */
-export async function isPushSubscribed(): Promise<boolean> {
-  if (!isPushSupported()) return false;
-  const reg = await navigator.serviceWorker.ready;
-  const sub = await reg.pushManager.getSubscription();
-  return !!sub;
-}
-
-/** Asks for permission (if needed) and registers this device with the backend. */
 export async function enablePushNotifications(): Promise<void> {
   if (!isPushSupported()) throw new Error('Push notifications are not supported on this device/browser.');
 
@@ -41,14 +28,13 @@ export async function enablePushNotifications(): Promise<void> {
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
     });
   }
 
   await api.post('/api/restaurant/push-subscribe', sub.toJSON());
 }
 
-/** Unsubscribes this device, both from the browser and the backend. */
 export async function disablePushNotifications(): Promise<void> {
   if (!isPushSupported()) return;
   const reg = await navigator.serviceWorker.ready;
