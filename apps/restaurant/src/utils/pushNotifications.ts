@@ -1,3 +1,7 @@
+import { api } from '../api/client';
+
+// Converts the VAPID public key (base64url string from .env) into the
+// Uint8Array format the Push API expects.
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
